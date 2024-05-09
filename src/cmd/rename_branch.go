@@ -11,6 +11,7 @@ import (
 	"github.com/git-town/git-town/v14/src/config"
 	"github.com/git-town/git-town/v14/src/execute"
 	"github.com/git-town/git-town/v14/src/git/gitdomain"
+	. "github.com/git-town/git-town/v14/src/gohacks/prelude"
 	"github.com/git-town/git-town/v14/src/messages"
 	"github.com/git-town/git-town/v14/src/undo/undoconfig"
 	"github.com/git-town/git-town/v14/src/validate"
@@ -105,6 +106,7 @@ func executeRenameBranch(args []string, dryRun, force, verbose bool) error {
 }
 
 type renameBranchData struct {
+	allBranches      gitdomain.BranchInfos
 	config           config.ValidatedConfig
 	dialogTestInputs components.TestInputs
 	dryRun           bool
@@ -112,7 +114,7 @@ type renameBranchData struct {
 	initialBranch    gitdomain.LocalBranchName
 	newBranch        gitdomain.LocalBranchName
 	oldBranch        gitdomain.BranchInfo
-	previousBranch   gitdomain.LocalBranchName
+	previousBranch   Option[gitdomain.LocalBranchName]
 }
 
 func emptyRenameBranchData() renameBranchData {
@@ -194,6 +196,7 @@ func determineRenameBranchData(args []string, forceFlag bool, repo execute.OpenR
 		return emptyRenameBranchData(), branchesSnapshot, stashSize, false, fmt.Errorf(messages.BranchAlreadyExistsRemotely, newBranchName)
 	}
 	return renameBranchData{
+		allBranches:      branchesSnapshot.Branches,
 		config:           validatedConfig,
 		dialogTestInputs: dialogTestInputs,
 		dryRun:           dryRun,
@@ -235,7 +238,29 @@ func renameBranchProgram(data renameBranchData) program.Program {
 		DryRun:           data.dryRun,
 		RunInGitRoot:     false,
 		StashOpenChanges: false,
-		PreviousBranch:   gitdomain.LocalBranchNames{data.previousBranch, data.newBranch},
+		PreviousBranch:   previousBranchAfterRename(data.previousBranch, data.config.Config.MainBranch, data.allBranches),
 	})
 	return result
+}
+
+func previousBranchAfterRename(oldPreviousBranch Option[gitdomain.LocalBranchName], mainBranch gitdomain.LocalBranchName, allBranches gitdomain.BranchInfos) Option[gitdomain.LocalBranchName] {
+	mainInfo := allBranches.FindByLocalName(mainBranch).GetOrPanic()
+	var mainBranchOpt Option[gitdomain.LocalBranchName]
+	if mainInfo.SyncStatus != gitdomain.SyncStatusOtherWorktree {
+		mainBranchOpt = Some(mainBranch)
+	} else {
+		mainBranchOpt = None[gitdomain.LocalBranchName]()
+	}
+	oldPrevious, hasOldPrevious := oldPreviousBranch.Get()
+	if !hasOldPrevious {
+		return mainBranchOpt
+	}
+	oldPreviousInfo, hasOldPreviousInfo := allBranches.FindByLocalName(oldPrevious).Get()
+	if !hasOldPreviousInfo {
+		return mainBranchOpt
+	}
+	if oldPreviousInfo.SyncStatus == gitdomain.SyncStatusOtherWorktree {
+		return mainBranchOpt
+	}
+	return Some(oldPrevious)
 }
