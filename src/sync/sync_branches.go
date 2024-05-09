@@ -26,10 +26,10 @@ func BranchesProgram(args BranchesProgramArgs) {
 		args.Program.Add(&opcodes.PushTags{})
 	}
 	cmdhelpers.Wrap(args.Program, cmdhelpers.WrapOptions{
-		DryRun:                   args.DryRun,
-		RunInGitRoot:             true,
-		StashOpenChanges:         args.HasOpenChanges,
-		PreviousBranchCandidates: previousbranchCandidates,
+		DryRun:           args.DryRun,
+		RunInGitRoot:     true,
+		StashOpenChanges: args.HasOpenChanges,
+		PreviousBranch:   previousbranchCandidates,
 	})
 }
 

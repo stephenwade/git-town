@@ -200,10 +200,10 @@ func appendProgram(data appendData) program.Program {
 		Ancestors: data.newBranchParentCandidates,
 	})
 	cmdhelpers.Wrap(&prog, cmdhelpers.WrapOptions{
-		DryRun:                   data.dryRun,
-		RunInGitRoot:             true,
-		StashOpenChanges:         data.hasOpenChanges,
-		PreviousBranchCandidates: gitdomain.LocalBranchNames{data.initialBranch, data.previousBranch},
+		DryRun:           data.dryRun,
+		RunInGitRoot:     true,
+		StashOpenChanges: data.hasOpenChanges,
+		PreviousBranch:   gitdomain.LocalBranchNames{data.initialBranch, data.previousBranch},
 	})
 	return prog
 }

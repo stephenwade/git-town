@@ -198,10 +198,10 @@ func killProgram(data *killData) (runProgram, finalUndoProgram program.Program) 
 		panic(fmt.Sprintf("this branch type should have been filtered in validation: %s", data.branchTypeToKill))
 	}
 	cmdhelpers.Wrap(&prog, cmdhelpers.WrapOptions{
-		DryRun:                   data.dryRun,
-		RunInGitRoot:             true,
-		StashOpenChanges:         data.initialBranch != data.branchNameToKill.LocalName && data.hasOpenChanges,
-		PreviousBranchCandidates: gitdomain.LocalBranchNames{data.previousBranch, data.initialBranch},
+		DryRun:           data.dryRun,
+		RunInGitRoot:     true,
+		StashOpenChanges: data.initialBranch != data.branchNameToKill.LocalName && data.hasOpenChanges,
+		PreviousBranch:   gitdomain.LocalBranchNames{data.previousBranch, data.initialBranch},
 	})
 	return prog, finalUndoProgram
 }

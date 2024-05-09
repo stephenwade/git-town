@@ -350,10 +350,10 @@ func shipProgram(data *shipData, commitMessage Option[gitdomain.CommitMessage]) 
 		prog.Add(&opcodes.Checkout{Branch: data.initialBranch})
 	}
 	cmdhelpers.Wrap(&prog, cmdhelpers.WrapOptions{
-		DryRun:                   data.dryRun,
-		RunInGitRoot:             true,
-		StashOpenChanges:         !data.isShippingInitialBranch && data.hasOpenChanges,
-		PreviousBranchCandidates: gitdomain.LocalBranchNames{data.previousBranch},
+		DryRun:           data.dryRun,
+		RunInGitRoot:     true,
+		StashOpenChanges: !data.isShippingInitialBranch && data.hasOpenChanges,
+		PreviousBranch:   gitdomain.LocalBranchNames{data.previousBranch},
 	})
 	return prog
 }

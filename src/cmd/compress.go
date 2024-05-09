@@ -244,18 +244,21 @@ func compressProgram(data *compressBranchesData) program.Program {
 		// most commands:
 		// - previous branch doesn't exist --> don't list it
 		// - previous branch is in another worktree --> don't list it
+		// - previous branch is current branch --> don't list it
 		// - previous branch exists --> list it
 		//
 		// rename-branch:
 		// - previous branch gets renamed --> list the new name
 		// - previous branch is in another worktree --> don't list it
+		// - previous branch is current branch --> don't list it
 		// - list the previous branch
 		//
 		// commands that can prune branches (sync):
 		// - previous branch is "remote gone" --> don't list it here
 		// - previous branch is in another worktree --> don't list it
+		// - previous branch is current branch --> don't list it
 		// - list it here
-		PreviousBranchCandidates: gitdomain.LocalBranchNames{data.previousBranch},
+		PreviousBranch: gitdomain.LocalBranchNames{data.previousBranch},
 	})
 	return prog
 }

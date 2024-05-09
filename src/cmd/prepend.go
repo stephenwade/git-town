@@ -215,10 +215,10 @@ func prependProgram(data prependData) program.Program {
 		prog.Add(&opcodes.CreateTrackingBranch{Branch: data.targetBranch})
 	}
 	cmdhelpers.Wrap(&prog, cmdhelpers.WrapOptions{
-		DryRun:                   data.dryRun,
-		RunInGitRoot:             true,
-		StashOpenChanges:         data.hasOpenChanges,
-		PreviousBranchCandidates: gitdomain.LocalBranchNames{data.previousBranch},
+		DryRun:           data.dryRun,
+		RunInGitRoot:     true,
+		StashOpenChanges: data.hasOpenChanges,
+		PreviousBranch:   gitdomain.LocalBranchNames{data.previousBranch},
 	})
 	return prog
 }

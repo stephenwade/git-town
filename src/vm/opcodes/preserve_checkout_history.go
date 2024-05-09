@@ -7,8 +7,8 @@ import (
 
 // PreserveCheckoutHistory does stuff.
 type PreserveCheckoutHistory struct {
-	PreviousBranchCandidates gitdomain.LocalBranchNames
-	undeclaredOpcodeMethods  `exhaustruct:"optional"`
+	PreviousBranch          gitdomain.LocalBranchName
+	undeclaredOpcodeMethods `exhaustruct:"optional"`
 }
 
 func (self *PreserveCheckoutHistory) Run(args shared.RunArgs) error {
@@ -19,7 +19,7 @@ func (self *PreserveCheckoutHistory) Run(args shared.RunArgs) error {
 	currentBranch := args.Backend.CurrentBranchCache.Value()
 	actualPreviousBranch := args.Backend.CurrentBranchCache.Previous()
 	// remove the current branch from the list of previous branch candidates because the current branch should never also be the previous branch
-	candidatesWithoutCurrent := self.PreviousBranchCandidates.Remove(currentBranch)
+	candidatesWithoutCurrent := self.PreviousBranch.Remove(currentBranch)
 	expectedPreviousBranch := args.Backend.FirstExistingBranch(candidatesWithoutCurrent, gitdomain.EmptyLocalBranchName())
 	if expectedPreviousBranch.IsEmpty() || actualPreviousBranch == expectedPreviousBranch {
 		return nil

@@ -25,10 +25,10 @@ func CreateUndoForFinishedProgram(args CreateUndoProgramArgs) program.Program {
 	result.AddProgram(args.RunState.FinalUndoProgram)
 	result.Add(&opcodes.Checkout{Branch: args.RunState.BeginBranchesSnapshot.Active})
 	cmdhelpers.Wrap(&result, cmdhelpers.WrapOptions{
-		DryRun:                   args.RunState.DryRun,
-		RunInGitRoot:             true,
-		StashOpenChanges:         args.RunState.IsFinished() && args.HasOpenChanges,
-		PreviousBranchCandidates: gitdomain.LocalBranchNames{args.RunState.BeginBranchesSnapshot.Active},
+		DryRun:           args.RunState.DryRun,
+		RunInGitRoot:     true,
+		StashOpenChanges: args.RunState.IsFinished() && args.HasOpenChanges,
+		PreviousBranch:   gitdomain.LocalBranchNames{args.RunState.BeginBranchesSnapshot.Active},
 	})
 	return result
 }

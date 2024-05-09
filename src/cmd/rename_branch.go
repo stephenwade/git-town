@@ -232,10 +232,10 @@ func renameBranchProgram(data renameBranchData) program.Program {
 	}
 	result.Add(&opcodes.DeleteLocalBranch{Branch: data.oldBranch.LocalName})
 	cmdhelpers.Wrap(&result, cmdhelpers.WrapOptions{
-		DryRun:                   data.dryRun,
-		RunInGitRoot:             false,
-		StashOpenChanges:         false,
-		PreviousBranchCandidates: gitdomain.LocalBranchNames{data.previousBranch, data.newBranch},
+		DryRun:           data.dryRun,
+		RunInGitRoot:     false,
+		StashOpenChanges: false,
+		PreviousBranch:   gitdomain.LocalBranchNames{data.previousBranch, data.newBranch},
 	})
 	return result
 }
