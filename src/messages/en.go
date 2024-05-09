@@ -109,6 +109,7 @@ END OUTPUT FROM 'git branch -vva'
 	KillBranchOtherWorktree               = `branch %q is active in another worktree`
 	KillCannotKillMainBranch              = "you cannot kill the main branch"
 	KillCannotKillPerennialBranches       = "you cannot kill perennial branches"
+	KillOnlyBranchInWorkspace             = "you cannot kill this branch because there is no other branch to check out when this branch is gone"
 	MainBranch                            = "Main branch: %s\n"
 	MainBranchCannotMakeContribution      = "cannot make the main branch a contribution branch"
 	MainBranchCannotObserve               = "cannot observe the main branch"
