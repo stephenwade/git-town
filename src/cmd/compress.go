@@ -278,10 +278,7 @@ func compressBranchProgram(prog *program.Program, data compressBranchData, onlin
 
 // determines the branch to set as the new previous branch when the "compress" command is over
 func previousBranchAfterCompress(oldPreviousBranch Option[gitdomain.LocalBranchName], mainBranch gitdomain.LocalBranchName, allBranches gitdomain.BranchInfos) Option[gitdomain.LocalBranchName] {
-	mainInfo, hasMainInfo := allBranches.FindByLocalName(mainBranch).Get()
-	if !hasMainInfo {
-		return None[gitdomain.LocalBranchName]()
-	}
+	mainInfo := allBranches.FindByLocalName(mainBranch).GetOrPanic()
 	var mainBranchOpt Option[gitdomain.LocalBranchName]
 	if mainInfo.SyncStatus != gitdomain.SyncStatusOtherWorktree {
 		mainBranchOpt = Some(mainBranch)

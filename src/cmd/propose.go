@@ -14,6 +14,7 @@ import (
 	"github.com/git-town/git-town/v14/src/config/gitconfig"
 	"github.com/git-town/git-town/v14/src/execute"
 	"github.com/git-town/git-town/v14/src/git/gitdomain"
+	. "github.com/git-town/git-town/v14/src/gohacks/prelude"
 	"github.com/git-town/git-town/v14/src/hosting"
 	"github.com/git-town/git-town/v14/src/hosting/hostingdomain"
 	"github.com/git-town/git-town/v14/src/messages"
@@ -113,7 +114,7 @@ type proposeData struct {
 	dryRun           bool
 	hasOpenChanges   bool
 	initialBranch    gitdomain.LocalBranchName
-	previousBranch   gitdomain.LocalBranchName
+	previousBranch   Option[gitdomain.LocalBranchName]
 	remotes          gitdomain.Remotes
 }
 
@@ -213,13 +214,35 @@ func proposeProgram(data proposeData) program.Program {
 		DryRun:           data.dryRun,
 		RunInGitRoot:     true,
 		StashOpenChanges: data.hasOpenChanges,
-		PreviousBranch:   gitdomain.LocalBranchNames{data.previousBranch},
+		PreviousBranch:   previousBranchAfterPropose(data.previousBranch, data.config.Config.MainBranch, data.allBranches),
 	})
 	prog.Add(&opcodes.CreateProposal{
 		Branch:     data.initialBranch,
 		MainBranch: data.config.Config.MainBranch,
 	})
 	return prog
+}
+
+func previousBranchAfterPropose(oldPreviousBranch Option[gitdomain.LocalBranchName], mainBranch gitdomain.LocalBranchName, allBranches gitdomain.BranchInfos) Option[gitdomain.LocalBranchName] {
+	mainInfo := allBranches.FindByLocalName(mainBranch).GetOrPanic()
+	var mainBranchOpt Option[gitdomain.LocalBranchName]
+	if mainInfo.SyncStatus != gitdomain.SyncStatusOtherWorktree {
+		mainBranchOpt = Some(mainBranch)
+	} else {
+		mainBranchOpt = None[gitdomain.LocalBranchName]()
+	}
+	oldPrevious, hasOldPrevious := oldPreviousBranch.Get()
+	if !hasOldPrevious {
+		return mainBranchOpt
+	}
+	oldPreviousInfo, hasOldPreviousInfo := allBranches.FindByLocalName(oldPrevious).Get()
+	if !hasOldPreviousInfo {
+		return mainBranchOpt
+	}
+	if oldPreviousInfo.SyncStatus == gitdomain.SyncStatusOtherWorktree {
+		return mainBranchOpt
+	}
+	return Some(oldPrevious)
 }
 
 func validateProposeData(data proposeData) error {
