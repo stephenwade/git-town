@@ -259,7 +259,7 @@ func compressProgram(data *compressBranchesData) program.Program {
 		// - previous branch is in another worktree --> don't list it
 		// - previous branch is current branch --> don't list it
 		// - list it here
-		PreviousBranch: finalPreviousBranch(data.previousBranch, data.config.Config.MainBranch, data.allBranches),
+		PreviousBranch: previousBranchAfterCompress(data.previousBranch, data.config.Config.MainBranch, data.allBranches),
 	})
 	return prog
 }
@@ -276,8 +276,8 @@ func compressBranchProgram(prog *program.Program, data compressBranchData, onlin
 	}
 }
 
-// determines the branch to set as the new previous branch when this command is over
-func finalPreviousBranch(oldPreviousBranch Option[gitdomain.LocalBranchName], mainBranch gitdomain.LocalBranchName, allBranches gitdomain.BranchInfos) Option[gitdomain.LocalBranchName] {
+// determines the branch to set as the new previous branch when the "compress" command is over
+func previousBranchAfterCompress(oldPreviousBranch Option[gitdomain.LocalBranchName], mainBranch gitdomain.LocalBranchName, allBranches gitdomain.BranchInfos) Option[gitdomain.LocalBranchName] {
 	mainInfo, hasMainInfo := allBranches.FindByLocalName(mainBranch).Get()
 	if !hasMainInfo {
 		return None[gitdomain.LocalBranchName]()

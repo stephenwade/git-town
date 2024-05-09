@@ -10,6 +10,7 @@ import (
 	"github.com/git-town/git-town/v14/src/config"
 	"github.com/git-town/git-town/v14/src/execute"
 	"github.com/git-town/git-town/v14/src/git/gitdomain"
+	. "github.com/git-town/git-town/v14/src/gohacks/prelude"
 	"github.com/git-town/git-town/v14/src/messages"
 	"github.com/git-town/git-town/v14/src/sync"
 	"github.com/git-town/git-town/v14/src/undo/undoconfig"
@@ -101,7 +102,7 @@ type appendData struct {
 	initialBranch             gitdomain.LocalBranchName
 	newBranchParentCandidates gitdomain.LocalBranchNames
 	parentBranch              gitdomain.LocalBranchName
-	previousBranch            gitdomain.LocalBranchName
+	previousBranch            Option[gitdomain.LocalBranchName]
 	remotes                   gitdomain.Remotes
 	targetBranch              gitdomain.LocalBranchName
 }
@@ -203,7 +204,7 @@ func appendProgram(data appendData) program.Program {
 		DryRun:           data.dryRun,
 		RunInGitRoot:     true,
 		StashOpenChanges: data.hasOpenChanges,
-		PreviousBranch:   gitdomain.LocalBranchNames{data.initialBranch, data.previousBranch},
+		PreviousBranch:   Some(data.initialBranch),
 	})
 	return prog
 }
