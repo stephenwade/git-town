@@ -2,12 +2,13 @@ package opcodes
 
 import (
 	"github.com/git-town/git-town/v14/src/git/gitdomain"
+	. "github.com/git-town/git-town/v14/src/gohacks/prelude"
 	"github.com/git-town/git-town/v14/src/vm/shared"
 )
 
 // PreserveCheckoutHistory does stuff.
 type PreserveCheckoutHistory struct {
-	PreviousBranch          gitdomain.LocalBranchName
+	PreviousBranch          Option[gitdomain.LocalBranchName]
 	undeclaredOpcodeMethods `exhaustruct:"optional"`
 }
 
@@ -18,14 +19,14 @@ func (self *PreserveCheckoutHistory) Run(args shared.RunArgs) error {
 	}
 	currentBranch := args.Backend.CurrentBranchCache.Value()
 	actualPreviousBranch := args.Backend.CurrentBranchCache.Previous()
-	// remove the current branch from the list of previous branch candidates because the current branch should never also be the previous branch
-	candidatesWithoutCurrent := self.PreviousBranch.Remove(currentBranch)
-	expectedPreviousBranch := args.Backend.FirstExistingBranch(candidatesWithoutCurrent, gitdomain.EmptyLocalBranchName())
-	if expectedPreviousBranch.IsEmpty() || actualPreviousBranch == expectedPreviousBranch {
+	wantPreviousBranch, hasWantPrevious := self.PreviousBranch.Get()
+	if !hasWantPrevious {
 		return nil
 	}
-	err := args.Backend.CheckoutBranchUncached(expectedPreviousBranch)
-	if err != nil {
+	if actualPreviousBranch == wantPreviousBranch {
+		return nil
+	}
+	if err := args.Backend.CheckoutBranchUncached(wantPreviousBranch); err != nil {
 		return err
 	}
 	return args.Backend.CheckoutBranchUncached(currentBranch)

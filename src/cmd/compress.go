@@ -107,6 +107,7 @@ func executeCompress(dryRun, verbose bool, message Option[gitdomain.CommitMessag
 }
 
 type compressBranchesData struct {
+	allBranches         gitdomain.BranchInfos
 	branchesToCompress  []compressBranchData
 	compressEntireStack bool
 	config              config.ValidatedConfig
@@ -114,7 +115,7 @@ type compressBranchesData struct {
 	dryRun              bool
 	hasOpenChanges      bool
 	initialBranch       gitdomain.LocalBranchName
-	previousBranch      gitdomain.LocalBranchName
+	previousBranch      Option[gitdomain.LocalBranchName]
 }
 
 type compressBranchData struct {
@@ -258,7 +259,7 @@ func compressProgram(data *compressBranchesData) program.Program {
 		// - previous branch is in another worktree --> don't list it
 		// - previous branch is current branch --> don't list it
 		// - list it here
-		PreviousBranch: gitdomain.LocalBranchNames{data.previousBranch},
+		PreviousBranch: finalPreviousBranch(data.previousBranch, data.config.Config.MainBranch, data.allBranches),
 	})
 	return prog
 }
@@ -273,6 +274,32 @@ func compressBranchProgram(prog *program.Program, data compressBranchData, onlin
 	if data.branchInfo.HasRemoteBranch() && online.Bool() {
 		prog.Add(&opcodes.ForcePushCurrentBranch{})
 	}
+}
+
+// determines the branch to set as the new previous branch when this command is over
+func finalPreviousBranch(oldPreviousBranch Option[gitdomain.LocalBranchName], mainBranch gitdomain.LocalBranchName, allBranches gitdomain.BranchInfos) Option[gitdomain.LocalBranchName] {
+	mainInfo, hasMainInfo := allBranches.FindByLocalName(mainBranch).Get()
+	if !hasMainInfo {
+		return None[gitdomain.LocalBranchName]()
+	}
+	var mainBranchOpt Option[gitdomain.LocalBranchName]
+	if mainInfo.SyncStatus != gitdomain.SyncStatusOtherWorktree {
+		mainBranchOpt = Some(mainBranch)
+	} else {
+		mainBranchOpt = None[gitdomain.LocalBranchName]()
+	}
+	oldPrevious, hasOldPrevious := oldPreviousBranch.Get()
+	if !hasOldPrevious {
+		return mainBranchOpt
+	}
+	oldPreviousInfo, hasOldPreviousInfo := allBranches.FindByLocalName(oldPrevious).Get()
+	if !hasOldPreviousInfo {
+		return mainBranchOpt
+	}
+	if oldPreviousInfo.SyncStatus == gitdomain.SyncStatusOtherWorktree {
+		return mainBranchOpt
+	}
+	return Some(oldPrevious)
 }
 
 func shouldCompressBranch(branchName gitdomain.LocalBranchName, branchType configdomain.BranchType, initialBranchName gitdomain.LocalBranchName) bool {
