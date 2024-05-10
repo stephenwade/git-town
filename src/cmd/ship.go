@@ -136,7 +136,7 @@ type shipData struct {
 	hasOpenChanges           bool
 	initialBranch            gitdomain.LocalBranchName
 	isShippingInitialBranch  bool
-	previousBranch           gitdomain.LocalBranchName
+	previousBranch           Option[gitdomain.LocalBranchName]
 	proposal                 Option[hostingdomain.Proposal]
 	proposalMessage          string
 	proposalsOfChildBranches []hostingdomain.Proposal
@@ -353,7 +353,7 @@ func shipProgram(data *shipData, commitMessage Option[gitdomain.CommitMessage]) 
 		DryRun:           data.dryRun,
 		RunInGitRoot:     true,
 		StashOpenChanges: !data.isShippingInitialBranch && data.hasOpenChanges,
-		PreviousBranch:   gitdomain.LocalBranchNames{data.previousBranch},
+		PreviousBranch:   previousBranchAfterShip(data.previousBranch, data.branchToShip.LocalName, data.initialBranch, data.config.Config.MainBranch, data.allBranches),
 	})
 	return prog
 }
@@ -379,4 +379,27 @@ func validateData(data shipData) error {
 		return validate.NoOpenChanges(data.hasOpenChanges)
 	}
 	return nil
+}
+
+// TODO: add unit tests for all these new helper methods
+func previousBranchAfterShip(oldPreviousBranch Option[gitdomain.LocalBranchName], shippedBranch, initialBranch, mainBranch gitdomain.LocalBranchName, allBranches gitdomain.BranchInfos) Option[gitdomain.LocalBranchName] {
+	mainInfo := allBranches.FindByLocalName(mainBranch).GetOrPanic()
+	var mainBranchOpt Option[gitdomain.LocalBranchName]
+	if mainInfo.SyncStatus != gitdomain.SyncStatusOtherWorktree {
+		mainBranchOpt = Some(mainBranch)
+	} else {
+		mainBranchOpt = None[gitdomain.LocalBranchName]()
+	}
+	oldPrevious, hasOldPrevious := oldPreviousBranch.Get()
+	if !hasOldPrevious {
+		return mainBranchOpt
+	}
+	oldPreviousInfo, hasOldPreviousInfo := allBranches.FindByLocalName(oldPrevious).Get()
+	if !hasOldPreviousInfo {
+		return mainBranchOpt
+	}
+	if oldPreviousInfo.SyncStatus == gitdomain.SyncStatusOtherWorktree {
+		return mainBranchOpt
+	}
+	return Some(oldPrevious)
 }
