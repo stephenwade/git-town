@@ -164,17 +164,18 @@ func determineKillData(args []string, repo execute.OpenRepoResult, dryRun, verbo
 	branchTypeToKill := validatedConfig.Config.BranchType(branchNameToKill)
 	previousBranch := repo.Backend.PreviouslyCheckedOutBranch()
 	branchWhenDone, err := activeBranchAfterKill(activeBranchAfterKillArgs{
+		allBranches:    branchesSnapshot.Branches,
 		branchToKill:   branchNameToKill,
 		currentBranch:  branchesSnapshot.Active,
 		mainBranch:     validatedConfig.Config.MainBranch,
 		previousBranch: previousBranch,
-		allBranches:    branchesSnapshot.Branches,
 	})
 	if err != nil {
 		return nil, branchesSnapshot, stashSize, exit, err
 	}
 	parentBranch := validatedConfig.Config.Lineage.Parent(branchToKill.LocalName)
 	return &killData{
+		allBranches:      branchesSnapshot.Branches,
 		branchNameToKill: branchToKill,
 		branchTypeToKill: branchTypeToKill,
 		branchWhenDone:   branchWhenDone,
@@ -261,11 +262,11 @@ func activeBranchAfterKill(args activeBranchAfterKillArgs) (gitdomain.LocalBranc
 }
 
 type activeBranchAfterKillArgs struct {
+	allBranches    gitdomain.BranchInfos
 	branchToKill   gitdomain.LocalBranchName
 	currentBranch  gitdomain.LocalBranchName
 	mainBranch     gitdomain.LocalBranchName
 	previousBranch Option[gitdomain.LocalBranchName]
-	allBranches    gitdomain.BranchInfos
 }
 
 // determines the branch to set as the new previous branch when the "compress" command is over

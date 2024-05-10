@@ -354,10 +354,10 @@ func shipProgram(data *shipData, commitMessage Option[gitdomain.CommitMessage]) 
 		RunInGitRoot:     true,
 		StashOpenChanges: !data.isShippingInitialBranch && data.hasOpenChanges,
 		PreviousBranch: previousBranchAfterShip(previousBranchAfterShipArgs{
-			oldPreviousBranch: data.previousBranch,
+			allBranches:       data.allBranches,
 			initialBranch:     data.initialBranch,
 			mainBranch:        data.config.Config.MainBranch,
-			allBranches:       data.allBranches,
+			oldPreviousBranch: data.previousBranch,
 		}),
 	})
 	return prog
@@ -410,8 +410,8 @@ func previousBranchAfterShip(args previousBranchAfterShipArgs) Option[gitdomain.
 }
 
 type previousBranchAfterShipArgs struct {
-	oldPreviousBranch Option[gitdomain.LocalBranchName]
+	allBranches       gitdomain.BranchInfos
 	initialBranch     gitdomain.LocalBranchName
 	mainBranch        gitdomain.LocalBranchName
-	allBranches       gitdomain.BranchInfos
+	oldPreviousBranch Option[gitdomain.LocalBranchName]
 }

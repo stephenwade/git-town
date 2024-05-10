@@ -221,6 +221,7 @@ func determineCompressBranchesData(repo execute.OpenRepoResult, dryRun, verbose 
 		return nil, branchesSnapshot, stashSize, exit, fmt.Errorf(messages.CompressAlreadyOneCommit, branchNamesToCompress[0])
 	}
 	return &compressBranchesData{
+		allBranches:         branchesSnapshot.Branches,
 		branchesToCompress:  branchesToCompress,
 		compressEntireStack: compressEntireStack,
 		config:              validatedConfig,

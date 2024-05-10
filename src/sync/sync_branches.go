@@ -12,11 +12,9 @@ func BranchesProgram(args BranchesProgramArgs) {
 	for _, branch := range args.BranchesToSync {
 		BranchProgram(branch, args.BranchProgramArgs)
 	}
-	previousbranchCandidates := gitdomain.LocalBranchNames{}
 	finalBranchCandidates := gitdomain.LocalBranchNames{args.InitialBranch}
 	if previousBranch, hasPreviousBranch := args.PreviousBranch.Get(); hasPreviousBranch {
 		finalBranchCandidates = append(finalBranchCandidates, previousBranch)
-		previousbranchCandidates = append(previousbranchCandidates, previousBranch)
 	}
 	args.Program.Add(&opcodes.CheckoutFirstExisting{
 		Branches:   finalBranchCandidates,
