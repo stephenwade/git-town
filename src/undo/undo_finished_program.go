@@ -2,7 +2,7 @@ package undo
 
 import (
 	"github.com/git-town/git-town/v14/src/cmd/cmdhelpers"
-	"github.com/git-town/git-town/v14/src/git/gitdomain"
+	. "github.com/git-town/git-town/v14/src/gohacks/prelude"
 	"github.com/git-town/git-town/v14/src/undo/undobranches"
 	"github.com/git-town/git-town/v14/src/undo/undoconfig"
 	"github.com/git-town/git-town/v14/src/undo/undostash"
@@ -28,7 +28,7 @@ func CreateUndoForFinishedProgram(args CreateUndoProgramArgs) program.Program {
 		DryRun:           args.RunState.DryRun,
 		RunInGitRoot:     true,
 		StashOpenChanges: args.RunState.IsFinished() && args.HasOpenChanges,
-		PreviousBranch:   gitdomain.LocalBranchNames{args.RunState.BeginBranchesSnapshot.Active},
+		PreviousBranch:   Some(args.RunState.BeginBranchesSnapshot.Active),
 	})
 	return result
 }

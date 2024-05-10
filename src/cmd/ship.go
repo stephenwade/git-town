@@ -353,7 +353,12 @@ func shipProgram(data *shipData, commitMessage Option[gitdomain.CommitMessage]) 
 		DryRun:           data.dryRun,
 		RunInGitRoot:     true,
 		StashOpenChanges: !data.isShippingInitialBranch && data.hasOpenChanges,
-		PreviousBranch:   previousBranchAfterShip(data.previousBranch, data.branchToShip.LocalName, data.initialBranch, data.config.Config.MainBranch, data.allBranches),
+		PreviousBranch: previousBranchAfterShip(previousBranchAfterShipArgs{
+			oldPreviousBranch: data.previousBranch,
+			initialBranch:     data.initialBranch,
+			mainBranch:        data.config.Config.MainBranch,
+			allBranches:       data.allBranches,
+		}),
 	})
 	return prog
 }
@@ -382,19 +387,19 @@ func validateData(data shipData) error {
 }
 
 // TODO: add unit tests for all these new helper methods
-func previousBranchAfterShip(oldPreviousBranch Option[gitdomain.LocalBranchName], shippedBranch, initialBranch, mainBranch gitdomain.LocalBranchName, allBranches gitdomain.BranchInfos) Option[gitdomain.LocalBranchName] {
-	mainInfo := allBranches.FindByLocalName(mainBranch).GetOrPanic()
+func previousBranchAfterShip(args previousBranchAfterShipArgs) Option[gitdomain.LocalBranchName] {
+	mainInfo := args.allBranches.FindByLocalName(args.mainBranch).GetOrPanic()
 	var mainBranchOpt Option[gitdomain.LocalBranchName]
 	if mainInfo.SyncStatus != gitdomain.SyncStatusOtherWorktree {
-		mainBranchOpt = Some(mainBranch)
+		mainBranchOpt = Some(args.mainBranch)
 	} else {
 		mainBranchOpt = None[gitdomain.LocalBranchName]()
 	}
-	oldPrevious, hasOldPrevious := oldPreviousBranch.Get()
+	oldPrevious, hasOldPrevious := args.oldPreviousBranch.Get()
 	if !hasOldPrevious {
 		return mainBranchOpt
 	}
-	oldPreviousInfo, hasOldPreviousInfo := allBranches.FindByLocalName(oldPrevious).Get()
+	oldPreviousInfo, hasOldPreviousInfo := args.allBranches.FindByLocalName(oldPrevious).Get()
 	if !hasOldPreviousInfo {
 		return mainBranchOpt
 	}
@@ -402,4 +407,11 @@ func previousBranchAfterShip(oldPreviousBranch Option[gitdomain.LocalBranchName]
 		return mainBranchOpt
 	}
 	return Some(oldPrevious)
+}
+
+type previousBranchAfterShipArgs struct {
+	oldPreviousBranch Option[gitdomain.LocalBranchName]
+	initialBranch     gitdomain.LocalBranchName
+	mainBranch        gitdomain.LocalBranchName
+	allBranches       gitdomain.BranchInfos
 }

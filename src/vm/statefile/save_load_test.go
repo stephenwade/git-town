@@ -101,7 +101,7 @@ func TestLoadSave(t *testing.T) {
 					ParentActiveInOtherWorktree: true,
 				},
 				&opcodes.PreserveCheckoutHistory{
-					PreviousBranch: gitdomain.NewLocalBranchNames("previous"),
+					PreviousBranch: Some(gitdomain.NewLocalBranchName("previous")),
 				},
 				&opcodes.PullCurrentBranch{},
 				&opcodes.PushCurrentBranch{
