@@ -328,9 +328,7 @@ func TestLoadSave(t *testing.T) {
     },
     {
       "data": {
-        "PreviousBranchCandidates": [
-          "previous"
-        ]
+        "PreviousBranch": "previous"
       },
       "type": "PreserveCheckoutHistory"
     },
