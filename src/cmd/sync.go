@@ -178,15 +178,6 @@ func determineSyncData(allFlag bool, repo execute.OpenRepoResult, verbose bool) 
 		return emptySyncData(), branchesSnapshot, stashSize, exit, err
 	}
 	previousBranch := repo.Backend.PreviouslyCheckedOutBranch()
-	var previousBranchOpt Option[gitdomain.LocalBranchName]
-	if previousBranchInfo, hasPreviousBranchInfo := branchesSnapshot.Branches.FindByLocalName(previousBranch).Get(); hasPreviousBranchInfo {
-		switch previousBranchInfo.SyncStatus {
-		case gitdomain.SyncStatusLocalOnly, gitdomain.SyncStatusNotInSync, gitdomain.SyncStatusUpToDate:
-			previousBranchOpt = Some(previousBranchInfo.LocalName)
-		case gitdomain.SyncStatusDeletedAtRemote, gitdomain.SyncStatusRemoteOnly, gitdomain.SyncStatusOtherWorktree:
-			previousBranchOpt = None[gitdomain.LocalBranchName]()
-		}
-	}
 	remotes, err := repo.Backend.Remotes()
 	if err != nil {
 		return emptySyncData(), branchesSnapshot, stashSize, false, err
@@ -227,7 +218,7 @@ func determineSyncData(allFlag bool, repo execute.OpenRepoResult, verbose bool) 
 		dialogTestInputs: dialogTestInputs,
 		hasOpenChanges:   repoStatus.OpenChanges,
 		initialBranch:    branchesSnapshot.Active,
-		previousBranch:   previousBranchOpt,
+		previousBranch:   previousBranch,
 		remotes:          remotes,
 		shouldPushTags:   shouldPushTags,
 	}, branchesSnapshot, stashSize, false, err
