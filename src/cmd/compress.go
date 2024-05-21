@@ -243,24 +243,7 @@ func compressProgram(data *compressBranchesData) program.Program {
 		DryRun:           data.dryRun,
 		RunInGitRoot:     true,
 		StashOpenChanges: data.hasOpenChanges,
-		// most commands:
-		// - previous branch doesn't exist --> don't list it
-		// - previous branch is in another worktree --> don't list it
-		// - previous branch is current branch --> don't list it
-		// - previous branch exists --> list it
-		//
-		// rename-branch:
-		// - previous branch gets renamed --> list the new name
-		// - previous branch is in another worktree --> don't list it
-		// - previous branch is current branch --> don't list it
-		// - list the previous branch
-		//
-		// commands that can prune branches (sync):
-		// - previous branch is "remote gone" --> don't list it here
-		// - previous branch is in another worktree --> don't list it
-		// - previous branch is current branch --> don't list it
-		// - list it here
-		PreviousBranch: previousBranchAfterCompress(data.previousBranch, data.config.Config.MainBranch, data.allBranches),
+		PreviousBranch:   PreviousBranchAfterCompress(data.previousBranch, data.config.Config.MainBranch, data.allBranches),
 	})
 	return prog
 }
@@ -278,7 +261,7 @@ func compressBranchProgram(prog *program.Program, data compressBranchData, onlin
 }
 
 // determines the branch to set as the new previous branch when the "compress" command is over
-func previousBranchAfterCompress(oldPreviousBranch Option[gitdomain.LocalBranchName], mainBranch gitdomain.LocalBranchName, allBranches gitdomain.BranchInfos) Option[gitdomain.LocalBranchName] {
+func PreviousBranchAfterCompress(oldPreviousBranch Option[gitdomain.LocalBranchName], mainBranch gitdomain.LocalBranchName, allBranches gitdomain.BranchInfos) Option[gitdomain.LocalBranchName] {
 	mainInfo := allBranches.FindByLocalName(mainBranch).GetOrPanic()
 	var mainBranchOpt Option[gitdomain.LocalBranchName]
 	if mainInfo.SyncStatus != gitdomain.SyncStatusOtherWorktree {
