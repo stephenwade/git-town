@@ -70,7 +70,7 @@ func executeAppend(arg string, dryRun, verbose bool) error {
 		BeginStashSize:        initialStashSize,
 		Command:               "append",
 		DryRun:                dryRun,
-		EndBranchesSnapshot:   gitdomain.EmptyBranchesSnapshot(),
+		EndBranchesSnapshot:   None[gitdomain.BranchesSnapshot](),
 		EndConfigSnapshot:     undoconfig.EmptyConfigSnapshot(),
 		EndStashSize:          0,
 		RunProgram:            appendProgram(*data),

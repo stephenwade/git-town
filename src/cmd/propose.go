@@ -82,7 +82,7 @@ func executePropose(dryRun, verbose bool) error {
 		BeginStashSize:        initialStashSize,
 		Command:               proposeCmd,
 		DryRun:                dryRun,
-		EndBranchesSnapshot:   gitdomain.EmptyBranchesSnapshot(),
+		EndBranchesSnapshot:   None[gitdomain.BranchesSnapshot](),
 		EndConfigSnapshot:     undoconfig.EmptyConfigSnapshot(),
 		EndStashSize:          0,
 		RunProgram:            proposeProgram(data),
