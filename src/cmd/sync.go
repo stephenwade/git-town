@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"os"
 
@@ -127,6 +128,7 @@ func executeSync(all, dryRun, verbose bool) error {
 		FinalMessages:           repo.FinalMessages,
 		Frontend:                repo.Frontend,
 		HasOpenChanges:          data.hasOpenChanges,
+		InitialBranch:           data.initialBranch,
 		InitialBranchesSnapshot: initialBranchesSnapshot,
 		InitialConfigSnapshot:   repo.ConfigSnapshot,
 		InitialStashSize:        initialStashSize,
@@ -182,12 +184,16 @@ func determineSyncData(allFlag bool, repo execute.OpenRepoResult, verbose bool) 
 	if err != nil {
 		return emptySyncData(), branchesSnapshot, stashSize, false, err
 	}
+	initialBranch, hasInitialBranch := branchesSnapshot.Active.Get()
+	if !hasInitialBranch {
+		return emptySyncData(), branchesSnapshot, stashSize, false, errors.New(messages.CurrentBranchCannotDetermine)
+	}
 	var branchNamesToSync gitdomain.LocalBranchNames
 	localBranches := branchesSnapshot.Branches.LocalBranches().Names()
 	if allFlag {
 		branchNamesToSync = localBranches
 	} else {
-		branchNamesToSync = gitdomain.LocalBranchNames{branchesSnapshot.Active}
+		branchNamesToSync = gitdomain.LocalBranchNames{initialBranch}
 	}
 	validatedConfig, exit, err := validate.Config(validate.ConfigArgs{
 		Backend:            repo.Backend,
@@ -207,7 +213,7 @@ func determineSyncData(allFlag bool, repo execute.OpenRepoResult, verbose bool) 
 	if allFlag {
 		shouldPushTags = true
 	} else {
-		shouldPushTags = validatedConfig.Config.IsMainOrPerennialBranch(branchesSnapshot.Active)
+		shouldPushTags = validatedConfig.Config.IsMainOrPerennialBranch(initialBranch)
 	}
 	allBranchNamesToSync := validatedConfig.Config.Lineage.BranchesAndAncestors(branchNamesToSync)
 	branchesToSync, err := branchesSnapshot.Branches.Select(allBranchNamesToSync...)
@@ -217,8 +223,8 @@ func determineSyncData(allFlag bool, repo execute.OpenRepoResult, verbose bool) 
 		config:           validatedConfig,
 		dialogTestInputs: dialogTestInputs,
 		hasOpenChanges:   repoStatus.OpenChanges,
-		initialBranch:    branchesSnapshot.Active,
-		previousBranch:   previousBranch,
+		initialBranch:    initialBranch,
+		previousBranch:   previousBranchOpt,
 		remotes:          remotes,
 		shouldPushTags:   shouldPushTags,
 	}, branchesSnapshot, stashSize, false, err

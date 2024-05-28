@@ -2,6 +2,7 @@ package undo
 
 import (
 	"github.com/git-town/git-town/v14/src/cmd/cmdhelpers"
+	"github.com/git-town/git-town/v14/src/git/gitdomain"
 	. "github.com/git-town/git-town/v14/src/gohacks/prelude"
 	"github.com/git-town/git-town/v14/src/undo/undobranches"
 	"github.com/git-town/git-town/v14/src/undo/undoconfig"
@@ -23,12 +24,13 @@ func CreateUndoForFinishedProgram(args CreateUndoProgramArgs) program.Program {
 	result.AddProgram(undoconfig.DetermineUndoConfigProgram(args.RunState.BeginConfigSnapshot, args.RunState.EndConfigSnapshot))
 	result.AddProgram(undostash.DetermineUndoStashProgram(args.RunState.BeginStashSize, args.RunState.EndStashSize))
 	result.AddProgram(args.RunState.FinalUndoProgram)
-	result.Add(&opcodes.Checkout{Branch: args.RunState.BeginBranchesSnapshot.Active})
+	initialBranch, _ := args.RunState.BeginBranchesSnapshot.Active.Get()
+	result.Add(&opcodes.Checkout{Branch: initialBranch})
 	cmdhelpers.Wrap(&result, cmdhelpers.WrapOptions{
 		DryRun:           args.RunState.DryRun,
 		RunInGitRoot:     true,
 		StashOpenChanges: args.RunState.IsFinished() && args.HasOpenChanges,
-		PreviousBranch:   Some(args.RunState.BeginBranchesSnapshot.Active),
+		PreviousBranch:   Some(gitdomain.LocalBranchNames{initialBranch}),
 	})
 	return result
 }

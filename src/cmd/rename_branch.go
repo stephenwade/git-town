@@ -96,6 +96,7 @@ func executeRenameBranch(args []string, dryRun, force, verbose bool) error {
 		FinalMessages:           repo.FinalMessages,
 		Frontend:                repo.Frontend,
 		HasOpenChanges:          data.hasOpenChanges,
+		InitialBranch:           data.initialBranch,
 		InitialBranchesSnapshot: initialBranchesSnapshot,
 		InitialConfigSnapshot:   repo.ConfigSnapshot,
 		InitialStashSize:        initialStashSize,
@@ -147,10 +148,14 @@ func determineRenameBranchData(args []string, forceFlag bool, repo execute.OpenR
 	if err != nil || exit {
 		return emptyRenameBranchData(), branchesSnapshot, stashSize, exit, err
 	}
+	initialBranch, hasInitialBranch := branchesSnapshot.Active.Get()
+	if !hasInitialBranch {
+		return emptyRenameBranchData(), branchesSnapshot, stashSize, exit, errors.New(messages.CurrentBranchCannotDetermine)
+	}
 	var oldBranchName gitdomain.LocalBranchName
 	var newBranchName gitdomain.LocalBranchName
 	if len(args) == 1 {
-		oldBranchName = branchesSnapshot.Active
+		oldBranchName = initialBranch
 		newBranchName = gitdomain.NewLocalBranchName(args[0])
 	} else {
 		oldBranchName = gitdomain.NewLocalBranchName(args[0])
@@ -201,7 +206,7 @@ func determineRenameBranchData(args []string, forceFlag bool, repo execute.OpenR
 		dialogTestInputs: dialogTestInputs,
 		dryRun:           dryRun,
 		hasOpenChanges:   repoStatus.OpenChanges,
-		initialBranch:    branchesSnapshot.Active,
+		initialBranch:    initialBranch,
 		newBranch:        newBranchName,
 		oldBranch:        oldBranch,
 		previousBranch:   previousBranch,
