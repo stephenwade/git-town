@@ -10,7 +10,7 @@ import (
 // Lineage encapsulates all data and functionality around parent branches.
 // branch --> its parent
 // Lineage only contains branches that have ancestors.
-type Lineage map[gitdomain.LocalBranchName]gitdomain.LocalBranchName
+type Lineage map[gitdomain.LocalBranchName]gitdomain.LocalBranchNames
 
 // Ancestors provides the names of all parent branches of the branch with the given name.
 func (self Lineage) Ancestors(branch gitdomain.LocalBranchName) gitdomain.LocalBranchNames {
