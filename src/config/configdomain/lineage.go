@@ -14,33 +14,26 @@ type Lineage map[gitdomain.LocalBranchName]gitdomain.LocalBranchNames
 
 // Ancestors provides the names of all parent branches of the branch with the given name.
 func (self Lineage) Ancestors(branch gitdomain.LocalBranchName) gitdomain.LocalBranchNames {
-	current := branch
 	result := gitdomain.LocalBranchNames{}
-	for {
-		parent, found := self[current]
-		if !found {
-			return result
-		}
-		result = append(gitdomain.LocalBranchNames{parent}, result...)
-		current = parent
+	self.addAncestors(branch, &result)
+	return result
+}
+
+// adds all ancestors of the given branch to the given ancestors list
+func (self Lineage) addAncestors(branch gitdomain.LocalBranchName, ancestors *gitdomain.LocalBranchNames) {
+	for _, parent := range self[branch] {
+		*ancestors = append(*ancestors, parent)
+		self.addAncestors(parent, ancestors)
 	}
 }
 
 // AncestorsWithoutRoot provides the names of all parent branches of the branch with the given name, excluding the root perennial branch.
 func (self Lineage) AncestorsWithoutRoot(branch gitdomain.LocalBranchName) gitdomain.LocalBranchNames {
-	current := branch
-	result := gitdomain.LocalBranchNames{}
-	for {
-		parent, found := self[current]
-		if !found {
-			if len(result) == 0 {
-				return result
-			}
-			return result[1:]
-		}
-		result.Prepend(parent)
-		current = parent
+	ancestors := self.Ancestors(branch)
+	if len(ancestors) > 0 {
+		return ancestors[1:]
 	}
+	return ancestors
 }
 
 // BranchAndAncestors provides the full ancestry for the branch with the given name,
