@@ -329,14 +329,33 @@ func TestTestCommands(t *testing.T) {
 		t.Parallel()
 		t.Run("normal lineage", func(t *testing.T) {
 			dev := testruntime.CreateGitTown(t)
-			dev.CreateFeatureBranch("parent-1")
-			dev.CreateBranch("child-1a", "parent-1")
-			dev.CreateBranch("child-1b", "parent-1")
-			dev.CreateFeatureBranch("parent-2")
+			dev.CreateFeatureBranch("branch-1")
+			dev.CreateChildFeatureBranch("branch-1a", "branch-1")
+			dev.CreateChildFeatureBranch("branch-1b", "branch-1")
+			dev.CreateFeatureBranch("branch-2")
 			have := dev.LineageTable()
 			want := datatable.DataTable{
 				Cells: [][]string{
 					{"BRANCH", "PARENT"},
+					{"branch-1", "main"},
+					{"branch-1a", "branch-1"},
+					{"branch-1b", "branch-1"},
+					{"branch-2", "main"},
+				},
+			}
+			must.Eq(t, want, have)
+		})
+		t.Run("parallel lineage", func(t *testing.T) {
+			dev := testruntime.CreateGitTown(t)
+			dev.CreateFeatureBranch("parent-1")
+			dev.CreateFeatureBranch("parent-2")
+			dev.CreateChildFeatureBranch("child", "parent-1")
+			dev.Config.SetParent("child", "parent-2")
+			have := dev.LineageTable()
+			want := datatable.DataTable{
+				Cells: [][]string{
+					{"BRANCH", "PARENT"},
+					{"child", "parent-1, parent-2"},
 					{"parent-1", "main"},
 					{"parent-2", "main"},
 				},
