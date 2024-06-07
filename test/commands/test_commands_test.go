@@ -9,6 +9,7 @@ import (
 	"github.com/acarl005/stripansi"
 	"github.com/git-town/git-town/v14/src/config/configdomain"
 	"github.com/git-town/git-town/v14/src/git/gitdomain"
+	"github.com/git-town/git-town/v14/test/datatable"
 	"github.com/git-town/git-town/v14/test/filesystem"
 	"github.com/git-town/git-town/v14/test/fixture"
 	"github.com/git-town/git-town/v14/test/git"
@@ -321,6 +322,26 @@ func TestTestCommands(t *testing.T) {
 			runtime.CreateBranch(gitdomain.NewLocalBranchName("main"), gitdomain.NewLocalBranchName("initial"))
 			runtime.CreateFeatureBranch(gitdomain.NewLocalBranchName("foo"))
 			must.Error(t, runtime.VerifyNoGitTownConfiguration())
+		})
+	})
+
+	t.Run("LineageTable", func(t *testing.T) {
+		t.Parallel()
+		t.Run("normal lineage", func(t *testing.T) {
+			dev := testruntime.CreateGitTown(t)
+			dev.CreateFeatureBranch("parent-1")
+			dev.CreateBranch("child-1a", "parent-1")
+			dev.CreateBranch("child-1b", "parent-1")
+			dev.CreateFeatureBranch("parent-2")
+			have := dev.LineageTable()
+			want := datatable.DataTable{
+				Cells: [][]string{
+					{"BRANCH", "PARENT"},
+					{"parent-1", "main"},
+					{"parent-2", "main"},
+				},
+			}
+			must.Eq(t, want, have)
 		})
 	})
 
