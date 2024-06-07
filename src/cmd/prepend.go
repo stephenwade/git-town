@@ -77,7 +77,7 @@ func executePrepend(args []string, dryRun, verbose, parallel bool) error {
 		EndBranchesSnapshot:   None[gitdomain.BranchesSnapshot](),
 		EndConfigSnapshot:     None[undoconfig.ConfigSnapshot](),
 		EndStashSize:          None[gitdomain.StashSize](),
-		RunProgram:            prependProgram(data, parallel),
+		RunProgram:            prependProgram(data),
 	}
 	return fullInterpreter.Execute(fullInterpreter.ExecuteArgs{
 		Backend:                 repo.Backend,
@@ -234,11 +234,13 @@ func prependProgram(data prependData) program.Program {
 		Branch:    data.targetBranch,
 		Ancestors: data.newParentCandidates,
 	})
-	// set the parent of the branch prepended to
-	prog.Add(&opcodes.SetParentIfBranchExists{
-		Branch: data.initialBranch,
-		Parent: data.targetBranch,
-	})
+	if !data.parallel {
+		// set the parent of the branch prepended to
+		prog.Add(&opcodes.SetParentIfBranchExists{
+			Branch: data.initialBranch,
+			Parent: data.targetBranch,
+		})
+	}
 	if data.remotes.HasOrigin() && data.config.Config.ShouldPushNewBranches() && data.config.Config.IsOnline() {
 		prog.Add(&opcodes.CreateTrackingBranch{Branch: data.targetBranch})
 	}
