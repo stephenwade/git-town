@@ -2,7 +2,6 @@ package configdomain
 
 import (
 	"github.com/git-town/git-town/v14/src/git/gitdomain"
-	"github.com/git-town/git-town/v14/src/gohacks"
 	. "github.com/git-town/git-town/v14/src/gohacks/prelude"
 	"github.com/git-town/git-town/v14/src/gohacks/slice"
 	"golang.org/x/exp/maps"
@@ -30,19 +29,8 @@ func (self Lineage) addAncestors(branch gitdomain.LocalBranchName, ancestors *gi
 
 // AncestorsWithoutRoot provides the names of all parent branches of the branch with the given name, excluding the root perennial branch.
 func (self Lineage) AncestorsWithoutRoot(branch gitdomain.LocalBranchName) gitdomain.LocalBranchNames {
-	current := branch
-	result := gohacks.NewMutableList[gitdomain.LocalBranchName, gitdomain.LocalBranchNames]()
-	for {
-		parent, found := self[current]
-		if !found {
-			if len(result) == 0 {
-				return result
-			}
-			return result[1:]
-		}
-		result.Prepend(parent)
-		current = parent
-	}
+	result := self.Ancestors(branch)
+	return result[1:]
 }
 
 // BranchAndAncestors provides the full ancestry for the branch with the given name,
