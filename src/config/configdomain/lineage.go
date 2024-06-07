@@ -4,25 +4,31 @@ import (
 	"github.com/git-town/git-town/v14/src/git/gitdomain"
 	. "github.com/git-town/git-town/v14/src/gohacks/prelude"
 	"github.com/git-town/git-town/v14/src/gohacks/slice"
-	"golang.org/x/exp/maps"
 )
 
 // Lineage encapsulates all data and functionality around parent branches.
 // branch --> its parent
 // Lineage only contains branches that have ancestors.
 type Lineage struct {
-	data map[gitdomain.LocalBranchName]gitdomain.LocalBranchNames
+	data []LineageEntry
 }
 
 func NewLineage() Lineage {
 	return Lineage{
-		data: make(map[gitdomain.LocalBranchName]gitdomain.LocalBranchNames),
+		data: make([]LineageEntry, 0),
 	}
 }
 
 func (self *Lineage) AddParent(branch, parent gitdomain.LocalBranchName) {
+	// TODO: delete this method?
 	self.initializeIfNeeded()
-	self.data[branch] = parent
+	if self.HasParent(branch, parent) {
+		return
+	}
+	self.data = append(self.data, LineageEntry{
+		Child:  branch,
+		Parent: parent,
+	})
 }
 
 // Ancestors provides the names of all parent branches of the branch with the given name.
@@ -34,7 +40,7 @@ func (self Lineage) Ancestors(branch gitdomain.LocalBranchName) gitdomain.LocalB
 
 // adds all ancestors of the given branch to the given ancestors list
 func (self Lineage) addAncestors(branch gitdomain.LocalBranchName, ancestors *gitdomain.LocalBranchNames) {
-	for _, parent := range self[branch] {
+	for _, parent := range self.Parents(branch) {
 		*ancestors = append(*ancestors, parent)
 		self.addAncestors(parent, ancestors)
 	}
@@ -66,14 +72,18 @@ func (self Lineage) BranchLineageWithoutRoot(branch gitdomain.LocalBranchName) g
 
 // BranchNames provides the names of all branches in this Lineage, sorted alphabetically.
 func (self Lineage) BranchNames() gitdomain.LocalBranchNames {
-	result := gitdomain.LocalBranchNames(maps.Keys(self.data))
+	result := gitdomain.LocalBranchNames(self.Branches())
 	result.Sort()
 	return result
 }
 
 // provides all branches for which the parent is known
 func (self Lineage) Branches() gitdomain.LocalBranchNames {
-	return maps.Keys(self.data)
+	result := make(gitdomain.LocalBranchNames, 0, self.Len())
+	for e, entry := range self.Entries() {
+		result[e] = entry.Child
+	}
+	return result
 }
 
 // BranchesAndAncestors provides the full lineage for the branches with the given names,
@@ -89,9 +99,9 @@ func (self Lineage) BranchesAndAncestors(branchNames gitdomain.LocalBranchNames)
 // Children provides the names of all branches that have the given branch as their parent.
 func (self Lineage) Children(branch gitdomain.LocalBranchName) gitdomain.LocalBranchNames {
 	result := gitdomain.LocalBranchNames{}
-	for child, parent := range self.data {
-		if parent == branch {
-			result = append(result, child)
+	for _, entry := range self.Entries() {
+		if entry.Parent == branch {
+			result = append(result, entry.Child)
 		}
 	}
 	result.Sort()
@@ -109,20 +119,13 @@ func (self Lineage) Descendants(branch gitdomain.LocalBranchName) gitdomain.Loca
 }
 
 func (self Lineage) Entries() []LineageEntry {
-	result := make([]LineageEntry, 0, self.Len())
-	for branch, parent := range self.data {
-		result = append(result, LineageEntry{
-			Child:  branch,
-			Parent: parent,
-		})
-	}
-	return result
+	return self.data
 }
 
 // HasParents returns whether or not the given branch has at least one parent.
 func (self Lineage) HasParents(branch gitdomain.LocalBranchName) bool {
-	for child := range self.data {
-		if child == branch {
+	for _, entry := range self.Entries() {
+		if entry.Child == branch {
 			return true
 		}
 	}
@@ -133,8 +136,8 @@ func (self Lineage) HasParents(branch gitdomain.LocalBranchName) bool {
 func (self Lineage) IsAncestor(ancestor, other gitdomain.LocalBranchName) bool {
 	current := other
 	for {
-		parent, found := self.data[current]
-		if !found {
+		parent, hasParent := self.Parent(current).Get()
+		if !hasParent {
 			return false
 		}
 		if parent == ancestor {
@@ -163,23 +166,27 @@ func (self Lineage) OrderHierarchically(branches gitdomain.LocalBranchNames) git
 }
 
 // Parent provides the name of the parent branch for the given branch or nil if the branch has no parent.
-func (self Lineage) Parent(branch gitdomain.LocalBranchName) Option[gitdomain.LocalBranchName] {
-	for child, parent := range self.data {
-		if child == branch {
-			return Some(parent)
+func (self Lineage) Parents(branch gitdomain.LocalBranchName) gitdomain.LocalBranchNames {
+	result := gitdomain.LocalBranchNames{}
+	for _, entry := range self.Entries() {
+		if entry.Child == branch {
+			result = append(result, entry.Parent)
 		}
 	}
-	return None[gitdomain.LocalBranchName]()
+	return result
 }
 
 // RemoveBranch removes the given branch completely from this lineage.
 func (self Lineage) RemoveBranch(branch gitdomain.LocalBranchName) {
-	parent, hasParent := self.Parent(branch).Get()
-	for _, childName := range self.Children(branch) {
+	parents := self.Parents(branch)
+	for _, entry := range self.Entries {
+		if entry.Parent != branch {
+			continue
+		}
 		if hasParent {
-			self.data[childName] = parent
+			self.data[child] = parent
 		} else {
-			delete(self.data, childName)
+			delete(self.data, child)
 		}
 	}
 	delete(self.data, branch)
