@@ -35,6 +35,7 @@ See "sync" for upstream remote options.`
 func prependCommand() *cobra.Command {
 	addVerboseFlag, readVerboseFlag := flags.Verbose()
 	addDryRunFlag, readDryRunFlag := flags.DryRun()
+	addParallelFlag, readParallelFlag := flags.Bool("parallel", "p", "Create the new branch parallel to the existing parent", flags.FlagTypeNonPersistent)
 	cmd := cobra.Command{
 		Use:     "prepend <branch>",
 		GroupID: "lineage",
@@ -42,15 +43,16 @@ func prependCommand() *cobra.Command {
 		Short:   prependDesc,
 		Long:    cmdhelpers.Long(prependDesc, prependHelp),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return executePrepend(args, readDryRunFlag(cmd), readVerboseFlag(cmd))
+			return executePrepend(args, readDryRunFlag(cmd), readVerboseFlag(cmd), readParallelFlag(cmd))
 		},
 	}
 	addDryRunFlag(&cmd)
+	addParallelFlag(&cmd)
 	addVerboseFlag(&cmd)
 	return &cmd
 }
 
-func executePrepend(args []string, dryRun, verbose bool) error {
+func executePrepend(args []string, dryRun, verbose, parallel bool) error {
 	repo, err := execute.OpenRepo(execute.OpenRepoArgs{
 		DryRun:           dryRun,
 		OmitBranchNames:  false,
@@ -62,7 +64,7 @@ func executePrepend(args []string, dryRun, verbose bool) error {
 	if err != nil {
 		return err
 	}
-	data, exit, err := determinePrependData(args, repo, dryRun, verbose)
+	data, exit, err := determinePrependData(args, repo, dryRun, verbose, parallel)
 	if err != nil || exit {
 		return err
 	}
@@ -75,7 +77,7 @@ func executePrepend(args []string, dryRun, verbose bool) error {
 		EndBranchesSnapshot:   None[gitdomain.BranchesSnapshot](),
 		EndConfigSnapshot:     None[undoconfig.ConfigSnapshot](),
 		EndStashSize:          None[gitdomain.StashSize](),
-		RunProgram:            prependProgram(data),
+		RunProgram:            prependProgram(data, parallel),
 	}
 	return fullInterpreter.Execute(fullInterpreter.ExecuteArgs{
 		Backend:                 repo.Backend,
@@ -98,27 +100,28 @@ func executePrepend(args []string, dryRun, verbose bool) error {
 }
 
 type prependData struct {
-	allBranches               gitdomain.BranchInfos
-	branchesSnapshot          gitdomain.BranchesSnapshot
-	branchesToSync            gitdomain.BranchInfos
-	config                    config.ValidatedConfig
-	dialogTestInputs          components.TestInputs
-	dryRun                    bool
-	hasOpenChanges            bool
-	initialBranch             gitdomain.LocalBranchName
-	newBranchParentCandidates gitdomain.LocalBranchNames
-	parentBranch              gitdomain.LocalBranchName
-	previousBranch            Option[gitdomain.LocalBranchName]
-	remotes                   gitdomain.Remotes
-	stashSize                 gitdomain.StashSize
-	targetBranch              gitdomain.LocalBranchName
+	allBranches         gitdomain.BranchInfos
+	branchesSnapshot    gitdomain.BranchesSnapshot
+	branchesToSync      gitdomain.BranchInfos
+	config              config.ValidatedConfig
+	dialogTestInputs    components.TestInputs
+	dryRun              bool
+	hasOpenChanges      bool
+	initialBranch       gitdomain.LocalBranchName
+	newParentCandidates gitdomain.LocalBranchNames
+	parallel            bool
+	parentBranch        gitdomain.LocalBranchName
+	previousBranch      Option[gitdomain.LocalBranchName]
+	remotes             gitdomain.Remotes
+	stashSize           gitdomain.StashSize
+	targetBranch        gitdomain.LocalBranchName
 }
 
 func emptyPrependData() prependData {
 	return prependData{} //exhaustruct:ignore
 }
 
-func determinePrependData(args []string, repo execute.OpenRepoResult, dryRun, verbose bool) (prependData, bool, error) {
+func determinePrependData(args []string, repo execute.OpenRepoResult, dryRun, verbose, parallel bool) (prependData, bool, error) {
 	dialogTestInputs := components.LoadTestInputs(os.Environ())
 	repoStatus, err := repo.Git.RepoStatus(repo.Backend)
 	if err != nil {
@@ -176,27 +179,37 @@ func determinePrependData(args []string, repo execute.OpenRepoResult, dryRun, ve
 	}
 	branchNamesToSync := validatedConfig.Config.Lineage.BranchAndAncestors(initialBranch)
 	branchesToSync := fc.BranchInfos(branchesSnapshot.Branches.Select(branchNamesToSync...))
-	parent, hasParent := validatedConfig.Config.Lineage.Parent(initialBranch).Get()
-	if !hasParent {
+	existingParent, hasExistingParent := validatedConfig.Config.Lineage.Parent(initialBranch).Get()
+	if !hasExistingParent {
 		return emptyPrependData(), false, fmt.Errorf(messages.SetParentNoFeatureBranch, branchesSnapshot.Active)
 	}
-	parentAndAncestors := validatedConfig.Config.Lineage.BranchAndAncestors(parent)
-	slices.Reverse(parentAndAncestors)
+	var newParentCandidates gitdomain.LocalBranchNames
+	if parallel {
+		existingGrandParent, hasExistingGrandParent := validatedConfig.Config.Lineage.Parent(existingParent).Get()
+		if !hasExistingGrandParent {
+			return emptyPrependData(), false, fmt.Errorf(messages.PrependNoGrandParent)
+		}
+		newParentCandidates = validatedConfig.Config.Lineage.BranchAndAncestors(existingGrandParent)
+	} else {
+		newParentCandidates = validatedConfig.Config.Lineage.BranchAndAncestors(existingParent)
+	}
+	slices.Reverse(newParentCandidates)
 	return prependData{
-		allBranches:               branchesSnapshot.Branches,
-		branchesSnapshot:          branchesSnapshot,
-		branchesToSync:            branchesToSync,
-		config:                    validatedConfig,
-		dialogTestInputs:          dialogTestInputs,
-		dryRun:                    dryRun,
-		hasOpenChanges:            repoStatus.OpenChanges,
-		initialBranch:             initialBranch,
-		newBranchParentCandidates: parentAndAncestors,
-		parentBranch:              parent,
-		previousBranch:            previousBranch,
-		remotes:                   remotes,
-		stashSize:                 stashSize,
-		targetBranch:              targetBranch,
+		allBranches:         branchesSnapshot.Branches,
+		branchesSnapshot:    branchesSnapshot,
+		branchesToSync:      branchesToSync,
+		config:              validatedConfig,
+		dialogTestInputs:    dialogTestInputs,
+		dryRun:              dryRun,
+		hasOpenChanges:      repoStatus.OpenChanges,
+		initialBranch:       initialBranch,
+		newParentCandidates: newParentCandidates,
+		parallel:            parallel,
+		parentBranch:        existingParent,
+		previousBranch:      previousBranch,
+		remotes:             remotes,
+		stashSize:           stashSize,
+		targetBranch:        targetBranch,
 	}, false, fc.Err
 }
 
@@ -213,13 +226,13 @@ func prependProgram(data prependData) program.Program {
 		})
 	}
 	prog.Add(&opcodes.CreateAndCheckoutBranchExistingParent{
-		Ancestors: data.newBranchParentCandidates,
+		Ancestors: data.newParentCandidates,
 		Branch:    data.targetBranch,
 	})
 	// set the parent of the newly created branch
 	prog.Add(&opcodes.SetExistingParent{
 		Branch:    data.targetBranch,
-		Ancestors: data.newBranchParentCandidates,
+		Ancestors: data.newParentCandidates,
 	})
 	// set the parent of the branch prepended to
 	prog.Add(&opcodes.SetParentIfBranchExists{

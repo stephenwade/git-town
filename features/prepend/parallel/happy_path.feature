@@ -10,6 +10,7 @@ Feature: Creating an additional parent branch
       | branch-2 | local, origin | branch-2 commit |
     When I run "git-town prepend --parallel branch-3"
 
+  @debug @this
   Scenario: result
     Then it runs the commands
       | BRANCH | COMMAND                  |

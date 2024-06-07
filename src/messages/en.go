@@ -164,6 +164,7 @@ nd will be removed in future versions of Git Town.`
 	RunstatePathProblem            = "cannot determine the runstate file path: %w"
 	RunstateSaveProblem            = "cannot save run state: %w"
 	SetParentNoFeatureBranch       = "the branch %q is not a feature branch. Only feature branches can have parent branches"
+	PrependNoGrandParent           = "cannot prepend a parent branch in parallel to the existing parent because there is no grandparent branch"
 	SettingDeprecatedGlobalMessage = "Upgrading deprecated global setting %q to %q."
 	SettingGlobalCannotRemove      = "ERROR: cannot remove global Git setting %q: %v"
 	SettingGlobalCannotWrite       = "ERROR: cannot write global Git setting %q: %v"
