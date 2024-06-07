@@ -30,7 +30,7 @@ func (self Lineage) addAncestors(branch gitdomain.LocalBranchName, ancestors *gi
 // AncestorsWithoutRoot provides the names of all parent branches of the branch with the given name, excluding the root perennial branch.
 func (self Lineage) AncestorsWithoutRoot(branch gitdomain.LocalBranchName) gitdomain.LocalBranchNames {
 	current := branch
-	result := gitdomain.LocalBranchNames{}
+	result := gohacks.MutableList[gitdomain.LocalBranchName, gitdomain.LocalBranchNames]{}
 	for {
 		parent, found := self[current]
 		if !found {
