@@ -176,20 +176,54 @@ func (self Lineage) Parents(branch gitdomain.LocalBranchName) gitdomain.LocalBra
 	return result
 }
 
+// provides the LineageEntry instances that have the given branch as the parent
+func (self Lineage) ChildEntries(branch gitdomain.LocalBranchName) []*LineageEntry {
+	result := []*LineageEntry{}
+	for e, entry := range self.data {
+		if entry.Parent == branch {
+			result = append(result, &self.data[e])
+		}
+	}
+	return result
+}
+
+func (self *Lineage) removeMatching(query lineageQuery) {
+	newData := make([]LineageEntry, 0, self.Len())
+	queryChild, hasQueryChild := query.child.Get()
+	queryParent, hasQueryParent := query.parent.Get()
+	for _, entry := range self.data {
+		entryMatches := false
+		if hasQueryChild && entry.Child == queryChild {
+			entryMatches = true
+		}
+		if hasQueryParent && entry.Parent == queryParent {
+			entryMatches = true
+		}
+		if !entryMatches {
+			newData = append(newData, entry)
+		}
+	}
+	self.data = newData
+}
+
+type lineageQuery struct {
+	child  Option[gitdomain.LocalBranchName]
+	parent Option[gitdomain.LocalBranchName]
+}
+
 // RemoveBranch removes the given branch completely from this lineage.
 func (self Lineage) RemoveBranch(branch gitdomain.LocalBranchName) {
 	parents := self.Parents(branch)
-	for _, entry := range self.Entries {
-		if entry.Parent != branch {
-			continue
-		}
-		if hasParent {
-			self.data[child] = parent
-		} else {
-			delete(self.data, child)
+	children := self.Children(branch)
+	self.removeMatching(lineageQuery{
+		child:  Some(branch),
+		parent: Some(branch),
+	})
+	for _, child := range children {
+		for _, parent := range parents {
+			self.AddParent(child, parent)
 		}
 	}
-	delete(self.data, branch)
 }
 
 // Roots provides the branches with children and no parents.
