@@ -5,7 +5,6 @@ import (
 
 	"github.com/git-town/git-town/v14/src/config/configdomain"
 	"github.com/git-town/git-town/v14/src/git/gitdomain"
-	. "github.com/git-town/git-town/v14/src/gohacks/prelude"
 	"github.com/shoenig/test/must"
 )
 
@@ -24,9 +23,9 @@ func TestLineage(t *testing.T) {
 			branch := gitdomain.NewLocalBranchName("branch")
 			parent := gitdomain.NewLocalBranchName("parent")
 			lineage.AddParent(branch, parent)
-			have, has := lineage.Parent(branch).Get()
-			must.True(t, has)
-			must.Eq(t, parent, have)
+			have := lineage.Parents(branch)
+			want := gitdomain.LocalBranchNames{parent}
+			must.Eq(t, want, have)
 		})
 		t.Run("entry already exists", func(t *testing.T) {
 			t.Parallel()
@@ -36,9 +35,9 @@ func TestLineage(t *testing.T) {
 			lineage.AddParent(branch, parent)
 			lineage.AddParent(branch, parent)
 			must.EqOp(t, 1, lineage.Len())
-			have, has := lineage.Parent(branch).Get()
-			must.True(t, has)
-			must.Eq(t, parent, have)
+			have := lineage.Parents(branch)
+			want := gitdomain.LocalBranchNames{parent}
+			must.Eq(t, want, have)
 		})
 	})
 
@@ -484,29 +483,29 @@ func TestLineage(t *testing.T) {
 		})
 	})
 
-	t.Run("Parent", func(t *testing.T) {
+	t.Run("Parents", func(t *testing.T) {
 		t.Parallel()
 		t.Run("feature branch", func(t *testing.T) {
 			t.Parallel()
 			lineage := configdomain.NewLineage()
 			lineage.AddParent(one, main)
-			have := lineage.Parent(one)
-			want := Some(main)
+			have := lineage.Parents(one)
+			want := gitdomain.LocalBranchNames{main}
 			must.Eq(t, want, have)
 		})
 		t.Run("main branch", func(t *testing.T) {
 			t.Parallel()
 			lineage := configdomain.Lineage{}
-			have := lineage.Parent(main)
-			want := None[gitdomain.LocalBranchName]()
-			must.EqOp(t, want, have)
+			have := lineage.Parents(main)
+			want := gitdomain.LocalBranchNames{}
+			must.Eq(t, want, have)
 		})
 		t.Run("perennial branch", func(t *testing.T) {
 			t.Parallel()
 			lineage := configdomain.Lineage{}
-			have := lineage.Parent(one)
-			want := None[gitdomain.LocalBranchName]()
-			must.EqOp(t, want, have)
+			have := lineage.Parents(one)
+			want := gitdomain.LocalBranchNames{}
+			must.Eq(t, want, have)
 		})
 	})
 
