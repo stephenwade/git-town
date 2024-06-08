@@ -19,7 +19,7 @@ func NewLineage() Lineage {
 	}
 }
 
-func (self *Lineage) AddParent(branch, parent gitdomain.LocalBranchName) {
+func (self *Lineage) Add(branch, parent gitdomain.LocalBranchName) {
 	if self.HasParent(branch, parent) {
 		return
 	}
