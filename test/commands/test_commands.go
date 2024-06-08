@@ -317,7 +317,7 @@ func (self *TestCommands) LineageTable() datatable.DataTable {
 	_, localGitConfig, _ := self.Config.GitConfig.LoadLocal(false) // we ignore the Git cache here because reloading a config in the middle of a Git Town command doesn't change the cached initial state of the repo
 	lineage := localGitConfig.Lineage
 	for _, branchName := range lineage.BranchNames() {
-		result.AddRow(branchName.String(), lineage.Parent(branchName).String())
+		result.AddRow(branchName.String(), lineage.Parents(branchName).Join(", "))
 	}
 	result.Sort()
 	return result

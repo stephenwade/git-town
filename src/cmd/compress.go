@@ -197,8 +197,8 @@ func determineCompressBranchesData(repo execute.OpenRepoResult, dryRun, verbose 
 		if err := validateBranchIsSynced(branchNameToCompress, branchInfo.SyncStatus); err != nil {
 			return nil, exit, err
 		}
-		parent := validatedConfig.Config.Lineage.Parent(branchNameToCompress)
-		commits, err := repo.Git.CommitsInBranch(repo.Backend, branchNameToCompress.BranchName().LocalName(), parent)
+		parents := validatedConfig.Config.Lineage.Parents(branchNameToCompress)
+		commits, err := repo.Git.CommitsInBranch(repo.Backend, branchNameToCompress.BranchName().LocalName(), parents)
 		if err != nil {
 			return nil, exit, err
 		}
@@ -212,7 +212,7 @@ func determineCompressBranchesData(repo execute.OpenRepoResult, dryRun, verbose 
 		} else {
 			newCommitMessage = commits.Messages()[0]
 		}
-		parentBranch, hasParent := parent.Get()
+		parentBranch, hasParent := parents.Get()
 		if !hasParent {
 			return nil, exit, fmt.Errorf(messages.CompressBranchNoParent, branchNameToCompress)
 		}
