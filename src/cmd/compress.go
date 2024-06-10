@@ -197,34 +197,34 @@ func determineCompressBranchesData(repo execute.OpenRepoResult, dryRun, verbose 
 		if err := validateBranchIsSynced(branchNameToCompress, branchInfo.SyncStatus); err != nil {
 			return nil, exit, err
 		}
-		parents := validatedConfig.Config.Lineage.Parents(branchNameToCompress)
-		commits, err := repo.Git.CommitsInBranch(repo.Backend, branchNameToCompress.BranchName().LocalName(), parents)
-		if err != nil {
-			return nil, exit, err
+		for _, parent := range validatedConfig.Config.Lineage.Parents(branchNameToCompress) {
+			commits, err := repo.Git.CommitsInFeatureBranch(repo.Backend, branchNameToCompress.BranchName().LocalName(), parent)
+			if err != nil {
+				return nil, exit, err
+			}
+			commitCount := len(commits)
+			if commitCount == 0 {
+				continue
+			}
+			var newCommitMessage gitdomain.CommitMessage
+			if messageContent, has := message.Get(); has {
+				newCommitMessage = messageContent
+			} else {
+				newCommitMessage = commits.Messages()[0]
+			}
+			hasRemoteBranch, _, _ := branchInfo.HasRemoteBranch()
+			branchesToCompress = append(branchesToCompress, compressBranchData{
+				branchType:       branchType,
+				commitCount:      commitCount,
+				hasTracking:      hasRemoteBranch,
+				name:             branchNameToCompress,
+				newCommitMessage: newCommitMessage,
+				parentBranch:     parent,
+			})
 		}
-		commitCount := len(commits)
-		if commitCount == 0 {
-			continue
-		}
-		var newCommitMessage gitdomain.CommitMessage
-		if messageContent, has := message.Get(); has {
-			newCommitMessage = messageContent
-		} else {
-			newCommitMessage = commits.Messages()[0]
-		}
-		parentBranch, hasParent := parents.Get()
-		if !hasParent {
+		if len(branchesToCompress) == 0 {
 			return nil, exit, fmt.Errorf(messages.CompressBranchNoParent, branchNameToCompress)
 		}
-		hasRemoteBranch, _, _ := branchInfo.HasRemoteBranch()
-		branchesToCompress = append(branchesToCompress, compressBranchData{
-			branchType:       branchType,
-			commitCount:      commitCount,
-			hasTracking:      hasRemoteBranch,
-			name:             branchNameToCompress,
-			newCommitMessage: newCommitMessage,
-			parentBranch:     parentBranch,
-		})
 	}
 	if len(branchesToCompress) == 0 {
 		return nil, exit, fmt.Errorf(messages.CompressNoCommits, branchNamesToCompress[0])

@@ -176,11 +176,11 @@ func determinePrependData(args []string, repo execute.OpenRepoResult, dryRun, ve
 	}
 	branchNamesToSync := validatedConfig.Config.Lineage.BranchAndAncestors(initialBranch)
 	branchesToSync := fc.BranchInfos(branchesSnapshot.Branches.Select(branchNamesToSync...))
-	parent, hasParent := validatedConfig.Config.Lineage.Parent(initialBranch).Get()
-	if !hasParent {
+	parents := validatedConfig.Config.Lineage.Parents(initialBranch)
+	if parents.IsEmpty() {
 		return emptyPrependData(), false, fmt.Errorf(messages.SetParentNoFeatureBranch, branchesSnapshot.Active)
 	}
-	parentAndAncestors := validatedConfig.Config.Lineage.BranchAndAncestors(parent)
+	parentAndAncestors := validatedConfig.Config.Lineage.BranchAndAncestors(parents)
 	slices.Reverse(parentAndAncestors)
 	return prependData{
 		allBranches:               branchesSnapshot.Branches,
