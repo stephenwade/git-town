@@ -220,7 +220,7 @@ func (self Lineage) RemoveBranch(branch gitdomain.LocalBranchName) {
 	})
 	for _, child := range children {
 		for _, parent := range parents {
-			self.AddParent(child, parent)
+			self.Add(child, parent)
 		}
 	}
 }

@@ -123,8 +123,11 @@ func determineDiffParentData(args []string, repo execute.OpenRepoResult, verbose
 	if err != nil || exit {
 		return nil, exit, err
 	}
-	parentBranch, hasParent := validatedConfig.Config.Lineage.Parent(branch).Get()
-	if !hasParent {
+	parents := validatedConfig.Config.Lineage.Parents(branch)
+	if len(parents) == 0 {
+		return nil, false, errors.New(messages.DiffParentNoFeatureBranch)
+	}
+	if len(parents) > 1 {
 		return nil, false, errors.New(messages.DiffParentNoFeatureBranch)
 	}
 	return &diffParentData{

@@ -25,7 +25,7 @@ type Factory struct {
 	memoized Fixture
 }
 
-// NewFactory provides a new FixtureFactory instance operating in the given directory.
+// NewFactory provides a new Factory instance operating in the given directory.
 func NewFactory(dir string) Factory {
 	return Factory{
 		counter:  helpers.AtomicCounter{},
